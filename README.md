@@ -43,6 +43,70 @@ Les tests utilisent une base de données SQLite temporaire distincte (`tempfile`
 | PUT     | `/todos/<id>`        | Met à jour une tâche existante        |
 | DELETE  | `/todos/<id>`        | Supprime une tâche                    |
 
+## Conteneurisation avec Docker
+
+Construire l'image :
+
+```bash
+docker build -t todo-api .
+```
+
+Vérifier que l'image existe :
+
+```bash
+docker images
+```
+
+Lancer un conteneur (avec persistance de la base SQLite sur l'hôte) :
+
+```bash
+docker run -p 5000:5000 -v $(pwd)/todos.db:/app/todos.db todo-api
+```
+
+L'application est alors accessible sur `http://localhost:5000`.
+
+## Analyse de sécurité avec Trivy
+
+Trivy est utilisé pour scanner l'image Docker et générer un SBOM (Software Bill of Materials).
+
+Scanner l'image (vulnérabilités) :
+
+```bash
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "${PWD}:/output" aquasec/trivy:latest image todo-api
+```
+
+Générer un rapport JSON détaillé :
+
+```bash
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "${PWD}:/output" aquasec/trivy:latest image --format json --output /output/trivy-report.json todo-api
+```
+
+Générer le SBOM au format SPDX :
+
+```bash
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "${PWD}:/output" aquasec/trivy:latest image --format spdx-json --output /output/sbom.spdx.json todo-api
+```
+
+Générer le SBOM au format CycloneDX :
+
+```bash
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "${PWD}:/output" aquasec/trivy:latest image --format cyclonedx --output /output/sbom.cdx.json todo-api
+```
+
+> Sur Windows, l'image Docker officielle `aquasec/trivy` est utilisée plutôt qu'un binaire local, en montant le socket Docker (`/var/run/docker.sock`) pour permettre à Trivy d'accéder aux images locales.
+
+### Correction des vulnérabilités critiques
+
+Le premier scan a révélé une vulnérabilité **CRITICAL** dans `perl-base` (CVE-2026-42496, path traversal via `Archive::Tar`), sans correctif disponible côté Debian. Perl n'étant pas utilisé par l'application Flask, le paquet est retiré dans le Dockerfile :
+
+```dockerfile
+RUN apt-get remove -y --purge --allow-remove-essential perl-base perl && \
+    apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/*
+```
+
+Après cette modification, le scan Trivy ne révèle plus aucune vulnérabilité CRITICAL.
+
 ### Exemples avec curl
 
 ```bash

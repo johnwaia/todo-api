@@ -1,0 +1,10 @@
+todos.db
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.git/
+.gitignore
+README.md
+screenshots/
+test_app.py
