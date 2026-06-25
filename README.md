@@ -31,6 +31,8 @@ pytest test_app.py -v
 
 Les tests utilisent une base de données SQLite temporaire distincte (`tempfile`) pour ne pas affecter `todos.db`.
 
+![Résultats des tests](screenshots/tests.png)
+
 ## Endpoints de l'API
 
 | Méthode | Endpoint            | Description                          |
