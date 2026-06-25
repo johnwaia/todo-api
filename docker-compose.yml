@@ -1,0 +1,8 @@
+services:
+  todo-api:
+    image: johnwaia/todo-api:latest
+    ports:
+      - "80:5000"
+    volumes:
+      - ./todos.db:/app/todos.db
+    restart: unless-stopped

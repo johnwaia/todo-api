@@ -107,6 +107,73 @@ RUN apt-get remove -y --purge --allow-remove-essential perl-base perl && \
 
 Après cette modification, le scan Trivy ne révèle plus aucune vulnérabilité CRITICAL.
 
+## Déploiement sur DockerHub
+
+L'image est publiée sur DockerHub : [hub.docker.com/r/johnwaia/todo-api](https://hub.docker.com/r/johnwaia/todo-api)
+
+![Tags DockerHub](screenshots/dockerhub-tags.png)
+
+Se connecter à DockerHub :
+
+```bash
+docker login
+```
+
+Tagger l'image avec un tag mutable (`latest`) et un tag immuable de version (`v1.0.0`) :
+
+```bash
+docker tag todo-api johnwaia/todo-api:latest
+docker tag todo-api johnwaia/todo-api:v1.0.0
+```
+
+Pousser les deux tags :
+
+```bash
+docker push johnwaia/todo-api:latest
+docker push johnwaia/todo-api:v1.0.0
+```
+
+### Bonnes pratiques suivies
+
+- Tag immuable (`v1.0.0`) en plus de `latest` pour tracer les releases.
+- Image basée sur `python:3.11-slim` avec `perl` retiré pour réduire la surface de vulnérabilités (voir section précédente).
+- Conteneur exécuté avec un utilisateur non-root (`appuser`).
+- Aucun identifiant ni token DockerHub n'est stocké dans le dépôt.
+
+## Déployer l'application
+
+### Avec Docker
+
+```bash
+docker pull johnwaia/todo-api:latest
+docker run -d -p 80:5000 -v $(pwd)/todos.db:/app/todos.db --name todo-app johnwaia/todo-api:latest
+```
+
+### Avec Docker Compose (recommandé)
+
+Le fichier [docker-compose.yml](docker-compose.yml) définit le service :
+
+```yaml
+services:
+  todo-api:
+    image: johnwaia/todo-api:latest
+    ports:
+      - "80:5000"
+    volumes:
+      - ./todos.db:/app/todos.db
+    restart: unless-stopped
+```
+
+Lancer le déploiement :
+
+```bash
+docker compose up -d
+```
+
+L'application est alors accessible sur `http://localhost/todos`.
+
+![Conteneur todo-api en cours d'exécution](screenshots/Capture%20d%E2%80%99%C3%A9cran%202026-06-25%20115152.png)
+
 ### Exemples avec curl
 
 ```bash
